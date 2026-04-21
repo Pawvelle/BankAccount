@@ -1,18 +1,25 @@
-## Getting Started
+# 银行账户 CLI 系统
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+一个用 Java 编写的命令行银行账户管理小项目，用来练习面向对象编程。
 
-## Folder Structure
+## 功能
 
-The workspace contains two folders by default, where:
+- 用户注册、登录
+- 修改用户信息
+- 添加储蓄卡和信用卡
+- 存款、取款、还款
+- 查看账户信息
+- 简单资产排行
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
+## 运行环境
 
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+- JDK 8 及以上
+- 无第三方依赖
 
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
+## 运行方式
 
-## Dependency Management
+在项目根目录执行：
 
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+```bash
+javac -d bin src/*.java
+java -cp bin Main
