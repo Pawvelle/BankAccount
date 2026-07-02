@@ -1,3 +1,8 @@
+package com.bank.ui;
+
+import com.bank.model.*;
+import com.bank.service.BankUserManager;
+
 import java.util.List;
 import java.util.Scanner;
 
@@ -27,6 +32,7 @@ public class Main {
                     break;
                 case 4:
                     running = false;
+                    userManager.saveData(); // 退出前保存数据
                     System.out.println("系统已退出，欢迎下次使用。");
                     break;
                 default:
@@ -120,6 +126,7 @@ public class Main {
                     break;
                 case 4:
                     loggedIn = false;
+                    userManager.saveData(); // 退出登录前保存数据
                     System.out.println("你已退出当前账户。");
                     break;
                 default:
@@ -164,6 +171,7 @@ public class Main {
                     break;
                 case 4:
                     inWallet = false;
+                    userManager.saveData(); // 离开卡包管理时保存数据
                     break;
                 default:
                     System.out.println("无效选项，请重新输入。");
@@ -196,6 +204,7 @@ public class Main {
             }
 
             user.addAccount(account);
+            userManager.saveData(); // 添加银行卡后保存数据
             System.out.println();
             System.out.println("========== 添加成功 ==========");
             System.out.println("银行卡添加完成。");
@@ -254,6 +263,7 @@ public class Main {
                     break;
                 case 6:
                     using = false;
+                    userManager.saveData(); // 结束使用银行卡后保存数据
                     break;
                 default:
                     System.out.println("无效选项，请重新输入。");
@@ -285,6 +295,7 @@ public class Main {
             String password = readRequiredText("请输入银行卡密码：");
             double amount = readDouble("请输入存款金额：");
             account.deposit(password, amount);
+            userManager.saveData(); // 存款后保存数据
             showOperationResult("存款成功。", "当前余额：" + formatMoney(account.getBalance()),
                     "按回车键返回银行卡操作菜单...");
         } catch (IllegalArgumentException e) {
@@ -298,6 +309,7 @@ public class Main {
             String password = readRequiredText("请输入银行卡密码：");
             double amount = readDouble("请输入取款金额：");
             account.withdraw(password, amount);
+            userManager.saveData(); // 取款后保存数据
             showOperationResult("取款成功。", "当前余额：" + formatMoney(account.getBalance()),
                     "按回车键返回银行卡操作菜单...");
         } catch (IllegalArgumentException e) {
@@ -312,6 +324,7 @@ public class Main {
         String confirmPassword = readRequiredText("请再次输入新银行卡密码：");
         boolean success = account.setNewAccountPassword(oldPassword, newPassword, confirmPassword);
         if (success) {
+            userManager.saveData(); // 修改密码后保存数据
             showOperationResult("银行卡密码修改成功。", "卡号：" + account.getAccountNumber(),
                     "按回车键返回银行卡操作菜单...");
         } else {
@@ -342,6 +355,7 @@ public class Main {
 
     private void applySavingsInterest(SavingsAccount account) {
         account.applyInterest();
+        userManager.saveData(); // 应用利息后保存数据
         showOperationResult("利息处理完成。", "当前余额：" + formatMoney(account.getBalance()),
                 "按回车键返回银行卡操作菜单...");
     }
@@ -372,6 +386,7 @@ public class Main {
                     break;
                 case 4:
                     running = false;
+                    userManager.saveData(); // 退出信用卡菜单前保存数据
                     break;
                 default:
                     System.out.println("无效选项，请重新输入。");
@@ -385,6 +400,7 @@ public class Main {
             String password = readRequiredText("请输入银行卡密码：");
             double amount = readDouble("请输入支付金额：");
             account.payOnline(password, amount);
+            userManager.saveData(); // 线上支付后保存数据
             showOperationResult("线上支付成功。", "支付后余额：" + formatMoney(account.getBalance()),
                     "按回车键返回信用卡菜单...");
         } catch (IllegalArgumentException e) {
@@ -398,6 +414,7 @@ public class Main {
             double amount = readDouble("请输入还款金额：");
             String password = readRequiredText("请输入银行卡密码：");
             account.repay(amount, password);
+            userManager.saveData(); // 还款后保存数据
             showOperationResult("还款处理完成。",
                     "当前余额：" + formatMoney(account.getBalance()) + "\n当前已用额度：" +
                             formatMoney(account.getUsedCredit()),
@@ -426,18 +443,22 @@ public class Main {
                 switch (choice) {
                     case 1:
                         user.setUsername(readRequiredText("请输入新用户名："));
+                        userManager.saveData(); // 修改用户名后保存数据
                         showProfileUpdateResult("用户名已更新。", user);
                         break;
                     case 2:
                         user.setBirthday(readRequiredText("请输入新生日（yyyy-MM-dd）："));
+                        userManager.saveData(); // 修改生日后保存数据
                         showProfileUpdateResult("生日已更新。", user);
                         break;
                     case 3:
                         user.setPhone(readRequiredText("请输入新手机号："));
+                        userManager.saveData(); // 修改手机号后保存数据
                         showProfileUpdateResult("手机号已更新。", user);
                         break;
                     case 4:
                         user.setEmail(readRequiredText("请输入新邮箱："));
+                        userManager.saveData(); // 修改邮箱后保存数据
                         showProfileUpdateResult("邮箱已更新。", user);
                         break;
                     case 5:
@@ -446,6 +467,7 @@ public class Main {
                         String confirmPassword = readRequiredText("请再次输入新登录密码：");
                         boolean success = user.setNewAccountPassword(oldPassword, newPassword, confirmPassword);
                         if (success) {
+                            userManager.saveData(); // 修改登录密码后保存数据
                             showOperationResult("登录密码修改成功。", "用户ID：" + user.getId(),
                                     "按回车键返回修改菜单...");
                         } else {
@@ -454,6 +476,7 @@ public class Main {
                         break;
                     case 6:
                         editing = false;
+                        userManager.saveData(); // 退出修改菜单前保存数据
                         break;
                     default:
                         System.out.println("无效选项，请重新输入。");
@@ -611,6 +634,7 @@ public class Main {
         if (!scanner.hasNextLine()) {
             System.out.println();
             System.out.println("输入已结束，系统自动退出。");
+            userManager.saveData(); // 异常退出时保存数据
             System.exit(0);
         }
     }

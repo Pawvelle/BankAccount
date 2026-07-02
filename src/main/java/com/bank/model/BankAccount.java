@@ -1,7 +1,12 @@
+package com.bank.model;
+
+import java.io.Serializable;
 import java.util.Objects;
 
 // 银行账户类，抽象类，包含账户编号、账户持有人、账户密码、账户余额、账户计数器
-public abstract class BankAccount {
+public abstract class BankAccount implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private BankUser user;
     private String accountNumber;
     private String accountPassword;
@@ -19,6 +24,12 @@ public abstract class BankAccount {
         this.balance = balance;
         this.accountNumber = "HUE_" + accountCounter;
         accountCounter++;
+    }
+
+    public static void updateAccountCounter(int maxLoadedId) {
+        if (maxLoadedId >= accountCounter) {
+            accountCounter = maxLoadedId + 1;
+        }
     }
 
     public static boolean validatePassword(String newPassword, String confirmPassword) {
@@ -104,5 +115,4 @@ public abstract class BankAccount {
     public BankUser getUser() {
         return user;
     }
-
 }

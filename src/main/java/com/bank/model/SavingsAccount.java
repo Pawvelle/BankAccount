@@ -1,7 +1,12 @@
+package com.bank.model;
+
+import java.io.Serializable;
 import java.util.Objects;
 
 // 储蓄账户类，继承自银行账户类
-public class SavingsAccount extends BankAccount {
+public class SavingsAccount extends BankAccount implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private double interestRate;
 
     // 构造方法

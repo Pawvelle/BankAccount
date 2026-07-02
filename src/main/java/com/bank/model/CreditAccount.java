@@ -1,7 +1,15 @@
+package com.bank.model;
+
+import com.bank.interfaces.CurrencyConvertible;
+import com.bank.interfaces.OnlinePayable;
+
+import java.io.Serializable;
 import java.util.Objects;
 
 // 信用卡账户类，继承自银行账户类，实现在线支付接口和多币种转换接口
-public class CreditAccount extends BankAccount implements OnlinePayable, CurrencyConvertible {
+public class CreditAccount extends BankAccount implements OnlinePayable, CurrencyConvertible, Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private double creditLimit;
     private double usedCredit;
 
