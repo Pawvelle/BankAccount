@@ -1,5 +1,6 @@
 package com.bank.ui;
 
+import com.bank.exception.*;
 import com.bank.model.*;
 import com.bank.service.BankUserManager;
 
@@ -36,7 +37,7 @@ public class CardMenuUI {
                     break;
                 case 4:
                     inWallet = false;
-                    userManager.saveData(); // 离开卡包管理时保存数据
+                    userManager.saveData();
                     break;
                 default:
                     System.out.println("无效选项，请重新输入。");
@@ -58,7 +59,8 @@ public class CardMenuUI {
         System.out.println("========== 我的银行卡 ==========");
         for (int i = 0; i < accounts.size(); i++) {
             BankAccount account = accounts.get(i);
-            System.out.println((i + 1) + ". 卡号：" + account.getAccountNumber());
+            System.out.println((i + 1) + ". 卡号：" + account.getAccountNumber() +
+                    (account.isLocked() ? " [已锁定 (密码错3次)]" : ""));
             System.out.println("   类型：" + getAccountTypeName(account));
             System.out.println("   余额：" + ConsoleUtils.formatMoney(account.getBalance()));
         }
@@ -91,7 +93,7 @@ public class CardMenuUI {
             }
 
             user.addAccount(account);
-            userManager.saveData(); // 添加银行卡后保存数据
+            userManager.saveData();
             System.out.println();
             System.out.println("========== 添加成功 ==========");
             System.out.println("银行卡添加完成。");
@@ -99,7 +101,7 @@ public class CardMenuUI {
             System.out.println("卡类型：" + getAccountTypeName(account));
             System.out.println("当前余额：" + ConsoleUtils.formatMoney(account.getBalance()));
             ConsoleUtils.waitForEnter("按回车键返回卡包管理...");
-        } catch (IllegalArgumentException e) {
+        } catch (BankException e) {
             System.out.println("添加失败：" + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回卡包管理...");
         }
@@ -150,7 +152,7 @@ public class CardMenuUI {
                     break;
                 case 6:
                     using = false;
-                    userManager.saveData(); // 结束使用银行卡后保存数据
+                    userManager.saveData();
                     break;
                 default:
                     System.out.println("无效选项，请重新输入。");
@@ -161,7 +163,8 @@ public class CardMenuUI {
 
     private void printCardMenu(BankAccount account) {
         System.out.println();
-        System.out.println("====== 银行卡操作：" + account.getAccountNumber() + " ======");
+        System.out.println("====== 银行卡操作：" + account.getAccountNumber() +
+                (account.isLocked() ? " [已锁定]" : "") + " ======");
         System.out.println("1. 存款");
         System.out.println("2. 取款");
         System.out.println("3. 修改银行卡密码");
@@ -182,11 +185,11 @@ public class CardMenuUI {
             String password = ConsoleUtils.readRequiredText("请输入银行卡密码：");
             double amount = ConsoleUtils.readDouble("请输入存款金额：");
             account.deposit(password, amount);
-            userManager.saveData(); // 存款后保存数据
+            userManager.saveData();
             ConsoleUtils.showOperationResult("存款成功。", "当前余额：" + ConsoleUtils.formatMoney(account.getBalance()),
                     "按回车键返回银行卡操作菜单...");
-        } catch (IllegalArgumentException e) {
-            System.out.println("存款失败：" + e.getMessage());
+        } catch (BankException e) {
+            System.out.println("\n[操作中断] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回银行卡操作菜单...");
         }
     }
@@ -196,26 +199,29 @@ public class CardMenuUI {
             String password = ConsoleUtils.readRequiredText("请输入银行卡密码：");
             double amount = ConsoleUtils.readDouble("请输入取款金额：");
             account.withdraw(password, amount);
-            userManager.saveData(); // 取款后保存数据
+            userManager.saveData();
             ConsoleUtils.showOperationResult("取款成功。", "当前余额：" + ConsoleUtils.formatMoney(account.getBalance()),
                     "按回车键返回银行卡操作菜单...");
-        } catch (IllegalArgumentException e) {
-            System.out.println("取款失败：" + e.getMessage());
+        } catch (BankException e) {
+            System.out.println("\n[操作中断] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回银行卡操作菜单...");
         }
     }
 
     private void changeCardPassword(BankAccount account) {
-        String oldPassword = ConsoleUtils.readRequiredText("请输入旧银行卡密码：");
-        String newPassword = ConsoleUtils.readRequiredText("请输入新银行卡密码：");
-        String confirmPassword = ConsoleUtils.readRequiredText("请再次输入新银行卡密码：");
-        boolean success = account.setNewAccountPassword(oldPassword, newPassword, confirmPassword);
-        if (success) {
-            userManager.saveData(); // 修改密码后保存数据
-            ConsoleUtils.showOperationResult("银行卡密码修改成功。", "卡号：" + account.getAccountNumber(),
-                    "按回车键返回银行卡操作菜单...");
-        } else {
-            ConsoleUtils.waitForEnter("银行卡密码未修改，按回车键返回银行卡操作菜单...");
+        try {
+            String oldPassword = ConsoleUtils.readRequiredText("请输入旧银行卡密码：");
+            String newPassword = ConsoleUtils.readRequiredText("请输入新银行卡密码：");
+            String confirmPassword = ConsoleUtils.readRequiredText("请再次输入新银行卡密码：");
+            boolean success = account.setNewAccountPassword(oldPassword, newPassword, confirmPassword);
+            if (success) {
+                userManager.saveData();
+                ConsoleUtils.showOperationResult("银行卡密码修改成功。", "卡号：" + account.getAccountNumber(),
+                        "按回车键返回银行卡操作菜单...");
+            }
+        } catch (BankException e) {
+            System.out.println("\n[修改失败] " + e.getMessage());
+            ConsoleUtils.waitForEnter("按回车键返回银行卡操作菜单...");
         }
     }
 
@@ -225,6 +231,8 @@ public class CardMenuUI {
         System.out.println("卡号：" + account.getAccountNumber());
         System.out.println("持有人ID：" + account.getAccountHolder());
         System.out.println("卡类型：" + getAccountTypeName(account));
+        System.out.println("卡状态：" + (account.isLocked() ? "已锁定 (密码错3次)" : "正常"));
+        System.out.println("密码状态：SHA-256 哈希加密保存");
         System.out.println("余额：" + ConsoleUtils.formatMoney(account.getBalance()));
 
         if (account instanceof SavingsAccount) {
@@ -242,7 +250,7 @@ public class CardMenuUI {
 
     private void applySavingsInterest(SavingsAccount account) {
         account.applyInterest();
-        userManager.saveData(); // 应用利息后保存数据
+        userManager.saveData();
         ConsoleUtils.showOperationResult("利息处理完成。", "当前余额：" + ConsoleUtils.formatMoney(account.getBalance()),
                 "按回车键返回银行卡操作菜单...");
     }
@@ -273,7 +281,7 @@ public class CardMenuUI {
                     break;
                 case 4:
                     running = false;
-                    userManager.saveData(); // 退出信用卡菜单前保存数据
+                    userManager.saveData();
                     break;
                 default:
                     System.out.println("无效选项，请重新输入。");
@@ -287,11 +295,11 @@ public class CardMenuUI {
             String password = ConsoleUtils.readRequiredText("请输入银行卡密码：");
             double amount = ConsoleUtils.readDouble("请输入支付金额：");
             account.payOnline(password, amount);
-            userManager.saveData(); // 线上支付后保存数据
+            userManager.saveData();
             ConsoleUtils.showOperationResult("线上支付成功。", "支付后余额：" + ConsoleUtils.formatMoney(account.getBalance()),
                     "按回车键返回信用卡菜单...");
-        } catch (IllegalArgumentException e) {
-            System.out.println("支付失败：" + e.getMessage());
+        } catch (BankException e) {
+            System.out.println("\n[支付中断] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回信用卡菜单...");
         }
     }
@@ -301,20 +309,20 @@ public class CardMenuUI {
             double amount = ConsoleUtils.readDouble("请输入还款金额：");
             String password = ConsoleUtils.readRequiredText("请输入银行卡密码：");
             account.repay(amount, password);
-            userManager.saveData(); // 还款后保存数据
+            userManager.saveData();
             ConsoleUtils.showOperationResult("还款处理完成。",
                     "当前余额：" + ConsoleUtils.formatMoney(account.getBalance()) + "\n当前已用额度：" +
                             ConsoleUtils.formatMoney(account.getUsedCredit()),
                     "按回车键返回信用卡菜单...");
-        } catch (IllegalArgumentException e) {
-            System.out.println("还款失败：" + e.getMessage());
+        } catch (BankException e) {
+            System.out.println("\n[还款中断] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回信用卡菜单...");
         }
     }
 
     private BankAccount findAccountByNumber(BankUser user, String accountNumber) {
         for (BankAccount account : user.getMyAccounts()) {
-            if (account.getAccountNumber().equals(accountNumber)) {
+            if (account.getAccountNumber().equalsIgnoreCase(accountNumber.trim())) {
                 return account;
             }
         }

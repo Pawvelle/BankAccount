@@ -1,5 +1,8 @@
 package com.bank.ui;
 
+import com.bank.exception.AccountLockedException;
+import com.bank.exception.BankException;
+import com.bank.exception.InvalidPasswordException;
 import com.bank.model.BankUser;
 import com.bank.service.BankUserManager;
 
@@ -31,8 +34,11 @@ public class UserMenuUI {
             System.out.println("你的用户ID是：" + user.getId());
             System.out.println("用户名：" + user.getUsername());
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
-        } catch (IllegalArgumentException e) {
+        } catch (BankException e) {
             System.out.println("注册失败：" + e.getMessage());
+            ConsoleUtils.waitForEnter("按回车键返回主菜单...");
+        } catch (Exception e) {
+            System.out.println("注册失败：输入系统异常（" + e.getMessage() + "）");
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         }
     }
@@ -43,15 +49,20 @@ public class UserMenuUI {
         String id = ConsoleUtils.readRequiredText("请输入用户ID：");
         String password = ConsoleUtils.readRequiredText("请输入登录密码：");
 
-        BankUser user = authenticate(id, password);
-        if (user == null) {
-            System.out.println("登录失败：用户ID或密码错误。");
+        try {
+            BankUser user = userManager.authenticate(id, password);
+            System.out.println("登录成功，欢迎你，" + user.getUsername() + "。");
+            userCenter(user);
+        } catch (AccountLockedException e) {
+            System.out.println("\n[安全拦截] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
-            return;
+        } catch (InvalidPasswordException e) {
+            System.out.println("\n[登录失败] " + e.getMessage());
+            ConsoleUtils.waitForEnter("按回车键返回主菜单...");
+        } catch (BankException e) {
+            System.out.println("\n[登录失败] " + e.getMessage());
+            ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         }
-
-        System.out.println("登录成功，欢迎你，" + user.getUsername() + "。");
-        userCenter(user);
     }
 
     public void showAssetRanking() {
@@ -66,19 +77,11 @@ public class UserMenuUI {
 
         for (int i = 0; i < ranking.size(); i++) {
             BankUser user = ranking.get(i);
-            System.out.println((i + 1) + ". " + user.getUsername() + "（" + user.getId() + "）");
+            System.out.println((i + 1) + ". " + user.getUsername() + "（" + user.getId() + "）" +
+                    (user.isLocked() ? " [已锁定]" : ""));
             System.out.println("   总资产：" + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
         }
         ConsoleUtils.waitForEnter("按回车键返回主菜单...");
-    }
-
-    private BankUser authenticate(String id, String password) {
-        for (BankUser user : userManager.getAllUsers()) {
-            if (user.getId().equals(id) && user.getPassword().equals(password)) {
-                return user;
-            }
-        }
-        return null;
     }
 
     private void userCenter(BankUser user) {
@@ -108,7 +111,7 @@ public class UserMenuUI {
                     break;
                 case 4:
                     loggedIn = false;
-                    userManager.saveData(); // 退出登录前保存数据
+                    userManager.saveData();
                     System.out.println("你已退出当前账户。");
                     break;
                 default:
@@ -122,7 +125,7 @@ public class UserMenuUI {
         System.out.println();
         System.out.println("========== 账户信息 ==========");
         System.out.println(user.getUserInfo());
-        System.out.println("登录密码：******");
+        System.out.println("登录密码：****** (SHA-256 哈希安全保护)");
         System.out.println("账户总资产：" + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
         System.out.println("------------------------------");
         cardMenuUI.printUserCards(user, false);
@@ -147,22 +150,22 @@ public class UserMenuUI {
                 switch (choice) {
                     case 1:
                         user.setUsername(ConsoleUtils.readRequiredText("请输入新用户名："));
-                        userManager.saveData(); // 修改用户名后保存数据
+                        userManager.saveData();
                         ConsoleUtils.showProfileUpdateResult("用户名已更新。", user);
                         break;
                     case 2:
                         user.setBirthday(ConsoleUtils.readRequiredText("请输入新生日（yyyy-MM-dd）："));
-                        userManager.saveData(); // 修改生日后保存数据
+                        userManager.saveData();
                         ConsoleUtils.showProfileUpdateResult("生日已更新。", user);
                         break;
                     case 3:
                         user.setPhone(ConsoleUtils.readRequiredText("请输入新手机号："));
-                        userManager.saveData(); // 修改手机号后保存数据
+                        userManager.saveData();
                         ConsoleUtils.showProfileUpdateResult("手机号已更新。", user);
                         break;
                     case 4:
                         user.setEmail(ConsoleUtils.readRequiredText("请输入新邮箱："));
-                        userManager.saveData(); // 修改邮箱后保存数据
+                        userManager.saveData();
                         ConsoleUtils.showProfileUpdateResult("邮箱已更新。", user);
                         break;
                     case 5:
@@ -171,23 +174,22 @@ public class UserMenuUI {
                         String confirmPassword = ConsoleUtils.readRequiredText("请再次输入新登录密码：");
                         boolean success = user.setNewAccountPassword(oldPassword, newPassword, confirmPassword);
                         if (success) {
-                            userManager.saveData(); // 修改登录密码后保存数据
+                            userManager.saveData();
                             ConsoleUtils.showOperationResult("登录密码修改成功。", "用户ID：" + user.getId(),
                                     "按回车键返回修改菜单...");
-                        } else {
-                            ConsoleUtils.waitForEnter("登录密码未修改，按回车键继续...");
                         }
                         break;
                     case 6:
                         editing = false;
-                        userManager.saveData(); // 退出修改菜单前保存数据
+                        userManager.saveData();
                         break;
                     default:
                         System.out.println("无效选项，请重新输入。");
                         break;
                 }
-            } catch (IllegalArgumentException e) {
+            } catch (BankException e) {
                 System.out.println("修改失败：" + e.getMessage());
+                ConsoleUtils.waitForEnter("按回车键继续...");
             }
         }
     }

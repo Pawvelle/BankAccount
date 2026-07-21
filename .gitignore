@@ -1,5 +1,11 @@
 .vscode/
+.classpath
+.project
+.settings/
 bin/
 data/
-.DS_Store
 target/
+.DS_Store
+*.class
+*.log
+

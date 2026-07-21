@@ -1,5 +1,7 @@
 package com.bank.service;
 
+import com.bank.exception.AccountNotFoundException;
+import com.bank.exception.BankException;
 import com.bank.model.BankAccount;
 import com.bank.model.BankUser;
 
@@ -26,8 +28,7 @@ public class BankUserManager {
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             this.users = (List<BankUser>) ois.readObject();
-            
-            // 恢复计数器，避免新用户/新卡的ID与旧数据冲突
+
             int maxUserId = 100000;
             int maxAccountId = 2026000;
             for (BankUser user : users) {
@@ -35,7 +36,7 @@ public class BankUserManager {
                     int uid = Integer.parseInt(user.getId().replace("USER_", ""));
                     if (uid > maxUserId) maxUserId = uid;
                 } catch (Exception ignored) {}
-                
+
                 for (BankAccount acc : user.getMyAccounts()) {
                     try {
                         int aid = Integer.parseInt(acc.getAccountNumber().replace("HUE_", ""));
@@ -45,10 +46,10 @@ public class BankUserManager {
             }
             BankUser.updateUserCounter(maxUserId);
             BankAccount.updateAccountCounter(maxAccountId);
-            
+
             System.out.println("成功从本地加载数据，当前用户数：" + users.size());
         } catch (Exception e) {
-            System.out.println("加载本地数据失败：" + e.getMessage());
+            System.out.println("本地数据格式更新或读取失败，初始化新数据表（" + e.getMessage() + "）");
             this.users = new ArrayList<>();
         }
     }
@@ -69,14 +70,31 @@ public class BankUserManager {
 
     public void addUser(BankUser user) {
         if (user == null) {
-            System.out.println("用户不能为空！");
-            return;
+            throw new BankException("用户不能为空！");
         }
 
         users.add(user);
         saveData();
     }
-    
+
+    public BankUser findUserById(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new AccountNotFoundException("请输入有效的用户ID！");
+        }
+        for (BankUser user : users) {
+            if (user.getId().equalsIgnoreCase(id.trim())) {
+                return user;
+            }
+        }
+        throw new AccountNotFoundException("未找到ID为 [" + id + "] 的用户。");
+    }
+
+    public BankUser authenticate(String id, String password) {
+        BankUser user = findUserById(id);
+        user.verifyPassword(password);
+        return user;
+    }
+
     public List<BankUser> getAllUsers() {
         return new ArrayList<>(users);
     }

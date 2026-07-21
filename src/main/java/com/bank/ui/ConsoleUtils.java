@@ -1,7 +1,7 @@
 package com.bank.ui;
 
-import com.bank.model.BankAccount;
 import com.bank.model.BankUser;
+import com.bank.util.PasswordUtils;
 
 import java.util.Scanner;
 
@@ -16,9 +16,7 @@ public class ConsoleUtils {
     public static String readPasswordWithConfirmation(String prompt, String confirmPrompt) {
         String password = readRequiredText(prompt);
         String confirmPassword = readRequiredText(confirmPrompt);
-        if (!BankAccount.validatePassword(password, confirmPassword)) {
-            throw new IllegalArgumentException("密码验证失败。");
-        }
+        PasswordUtils.validatePasswordConfirmation(password, confirmPassword);
         return password;
     }
 
