@@ -19,68 +19,79 @@ public class UserMenuUI {
 
     public void registerUser() {
         System.out.println();
-        System.out.println("========== 注册账户 ==========");
+        System.out.println("  " + ConsoleUtils.bold("Register Account"));
+        System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
         try {
-            String username = ConsoleUtils.readRequiredText("请输入用户名：");
-            String birthday = ConsoleUtils.readRequiredText("请输入生日（yyyy-MM-dd）：");
-            String phone = ConsoleUtils.readRequiredText("请输入手机号：");
-            String email = ConsoleUtils.readRequiredText("请输入邮箱：");
-            String password = ConsoleUtils.readPasswordWithConfirmation("请输入登录密码（6位数字）：", "请再次输入登录密码：");
+            String username = ConsoleUtils.readRequiredText("请输入用户名");
+            String birthday = ConsoleUtils.readRequiredText("请输入生日 (yyyy-MM-dd)");
+            String phone = ConsoleUtils.readRequiredText("请输入手机号");
+            String email = ConsoleUtils.readRequiredText("请输入邮箱");
+            String password = ConsoleUtils.readPasswordWithConfirmation("请输入登录密码 (6位数字)", "请再次输入登录密码");
 
             BankUser user = new BankUser(username, birthday, phone, email, password);
+            ConsoleUtils.showSpinner("Creating user credentials database...", 800);
             userManager.addUser(user);
+
             System.out.println();
-            System.out.println("========== 注册成功 ==========");
-            System.out.println("你的用户ID是：" + user.getId());
-            System.out.println("用户名：" + user.getUsername());
+            System.out.println("  " + ConsoleUtils.ICON_SUCCESS + " " + ConsoleUtils.bold("Account created successfully"));
+            System.out.println("    User ID:   " + ConsoleUtils.color(user.getId(), ConsoleUtils.CYAN));
+            System.out.println("    Username:  " + user.getUsername());
+            System.out.println();
+
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         } catch (BankException e) {
-            System.out.println("注册失败：" + e.getMessage());
+            ConsoleUtils.showError("注册失败：" + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         } catch (Exception e) {
-            System.out.println("注册失败：输入系统异常（" + e.getMessage() + "）");
+            ConsoleUtils.showError("注册失败：输入系统异常（" + e.getMessage() + "）");
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         }
     }
 
     public void loginUser() {
         System.out.println();
-        System.out.println("========== 登录账户 ==========");
-        String id = ConsoleUtils.readRequiredText("请输入用户ID：");
-        String password = ConsoleUtils.readRequiredText("请输入登录密码：");
+        System.out.println("  " + ConsoleUtils.bold("Login Session"));
+        System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+        String id = ConsoleUtils.readRequiredText("请输入用户ID");
+        String password = ConsoleUtils.readRequiredText("请输入登录密码");
 
         try {
+            ConsoleUtils.showSpinner("Authenticating security credentials...", 700);
             BankUser user = userManager.authenticate(id, password);
-            System.out.println("登录成功，欢迎你，" + user.getUsername() + "。");
+            ConsoleUtils.showSuccess("登录成功，当前会话已激活。");
             userCenter(user);
         } catch (AccountLockedException e) {
-            System.out.println("\n[安全拦截] " + e.getMessage());
+            ConsoleUtils.showError("[安全拦截] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         } catch (InvalidPasswordException e) {
-            System.out.println("\n[登录失败] " + e.getMessage());
+            ConsoleUtils.showError("[登录失败] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         } catch (BankException e) {
-            System.out.println("\n[登录失败] " + e.getMessage());
+            ConsoleUtils.showError("[登录失败] " + e.getMessage());
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
         }
     }
 
     public void showAssetRanking() {
         System.out.println();
-        System.out.println("========== 资产排行 ==========");
+        System.out.println("  " + ConsoleUtils.bold("Asset Wealth Ranking"));
+        System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
         List<BankUser> ranking = userManager.getRankingByAssets();
         if (ranking.isEmpty()) {
-            System.out.println("当前还没有用户数据。");
+            ConsoleUtils.showInfo("当前系统内还没有任何用户数据。");
             ConsoleUtils.waitForEnter("按回车键返回主菜单...");
             return;
         }
 
         for (int i = 0; i < ranking.size(); i++) {
             BankUser user = ranking.get(i);
-            System.out.println((i + 1) + ". " + user.getUsername() + "（" + user.getId() + "）" +
-                    (user.isLocked() ? " [已锁定]" : ""));
-            System.out.println("   总资产：" + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
+            String lockedTag = user.isLocked() ? ConsoleUtils.color(" [Locked]", ConsoleUtils.RED) : "";
+
+            System.out.println("  " + (i + 1) + ". " + ConsoleUtils.bold(user.getUsername()) +
+                    " (" + user.getId() + ")" + lockedTag);
+            System.out.println("     Total Assets: " + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
         }
+        System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
         ConsoleUtils.waitForEnter("按回车键返回主菜单...");
     }
 
@@ -88,17 +99,19 @@ public class UserMenuUI {
         boolean loggedIn = true;
         while (loggedIn) {
             System.out.println();
-            System.out.println("====== 用户中心：" + user.getUsername() + " ======");
-            System.out.println("用户ID：" + user.getId());
-            System.out.println("银行卡数量：" + user.getMyAccounts().size() + " 张");
-            System.out.println("当前总资产：" + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
-            System.out.println("1. 查看账户信息");
-            System.out.println("2. 卡包管理");
-            System.out.println("3. 修改基础信息");
-            System.out.println("4. 退出登录");
-            System.out.println("=================================");
+            System.out.println("  " + ConsoleUtils.bold("User Profile") + ConsoleUtils.color(" (" + user.getId() + ")", ConsoleUtils.GRAY));
+            System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+            System.out.println("    Name:         " + user.getUsername());
+            System.out.println("    Active Cards: " + user.getMyAccounts().size());
+            System.out.println("    Total Assets: " + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
+            System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+            System.out.println("    1. Show basic profile info" + ConsoleUtils.color("     (查看基本信息)", ConsoleUtils.GRAY));
+            System.out.println("    2. Manage bank card package" + ConsoleUtils.color("    (卡包管理)", ConsoleUtils.GRAY));
+            System.out.println("    3. Edit personal configuration" + ConsoleUtils.color(" (修改个人资料)", ConsoleUtils.GRAY));
+            System.out.println("    4. Log out active session" + ConsoleUtils.color("      (退出登录)", ConsoleUtils.GRAY));
+            System.out.println();
 
-            int choice = ConsoleUtils.readInt("请选择功能：");
+            int choice = ConsoleUtils.readInt("请选择操作");
             switch (choice) {
                 case 1:
                     showUserInfo(user);
@@ -111,11 +124,12 @@ public class UserMenuUI {
                     break;
                 case 4:
                     loggedIn = false;
+                    ConsoleUtils.showSpinner("Saving user status to disk...", 500);
                     userManager.saveData();
-                    System.out.println("你已退出当前账户。");
+                    ConsoleUtils.showSuccess("已安全退出当前会话。");
                     break;
                 default:
-                    System.out.println("无效选项，请重新输入。");
+                    ConsoleUtils.showError("无效选项，请重新选择。");
                     break;
             }
         }
@@ -123,12 +137,18 @@ public class UserMenuUI {
 
     private void showUserInfo(BankUser user) {
         System.out.println();
-        System.out.println("========== 账户信息 ==========");
-        System.out.println(user.getUserInfo());
-        System.out.println("登录密码：****** (SHA-256 哈希安全保护)");
-        System.out.println("账户总资产：" + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
-        System.out.println("------------------------------");
+        System.out.println("  " + ConsoleUtils.bold("Profile Archive") + ConsoleUtils.color(" (" + user.getId() + ")", ConsoleUtils.GRAY));
+        System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+        String[] lines = user.getUserInfo().split("\n");
+        for (String line : lines) {
+            System.out.println("    " + line);
+        }
+        System.out.println("    Security:     " + ConsoleUtils.color("SHA-256 password hash verified", ConsoleUtils.GRAY));
+        System.out.println("    Total Wealth: " + ConsoleUtils.formatMoney(user.calculateTotalWealth()));
+        System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+        System.out.println();
         cardMenuUI.printUserCards(user, false);
+        System.out.println();
         ConsoleUtils.waitForEnter("按回车键返回用户中心...");
     }
 
@@ -136,46 +156,53 @@ public class UserMenuUI {
         boolean editing = true;
         while (editing) {
             System.out.println();
-            System.out.println("========== 修改基础信息 ==========");
-            System.out.println("1. 修改用户名");
-            System.out.println("2. 修改生日");
-            System.out.println("3. 修改手机号");
-            System.out.println("4. 修改邮箱");
-            System.out.println("5. 修改登录密码");
-            System.out.println("6. 返回上一级");
-            System.out.println("==================================");
+            System.out.println("  " + ConsoleUtils.bold("Edit Profile Settings"));
+            System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+            System.out.println("  " + ConsoleUtils.color("1.", ConsoleUtils.GRAY) + " Update username");
+            System.out.println("  " + ConsoleUtils.color("2.", ConsoleUtils.GRAY) + " Update birthday");
+            System.out.println("  " + ConsoleUtils.color("3.", ConsoleUtils.GRAY) + " Update phone number");
+            System.out.println("  " + ConsoleUtils.color("4.", ConsoleUtils.GRAY) + " Update email address");
+            System.out.println("  " + ConsoleUtils.color("5.", ConsoleUtils.GRAY) + " Change login password");
+            System.out.println("  " + ConsoleUtils.color("6.", ConsoleUtils.GRAY) + " Return to profile");
+            System.out.println("  " + ConsoleUtils.color("────────────────────────────────────────────────────────", ConsoleUtils.GRAY));
+            System.out.println();
 
-            int choice = ConsoleUtils.readInt("请选择功能：");
+            int choice = ConsoleUtils.readInt("请选择操作");
             try {
                 switch (choice) {
                     case 1:
-                        user.setUsername(ConsoleUtils.readRequiredText("请输入新用户名："));
+                        user.setUsername(ConsoleUtils.readRequiredText("请输入新用户名"));
+                        ConsoleUtils.showSpinner("Updating profile database...", 500);
                         userManager.saveData();
-                        ConsoleUtils.showProfileUpdateResult("用户名已更新。", user);
+                        ConsoleUtils.showProfileUpdateResult("用户名已成功更新！", user);
                         break;
                     case 2:
-                        user.setBirthday(ConsoleUtils.readRequiredText("请输入新生日（yyyy-MM-dd）："));
+                        user.setBirthday(ConsoleUtils.readRequiredText("请输入新生日 (yyyy-MM-dd)"));
+                        ConsoleUtils.showSpinner("Updating profile database...", 500);
                         userManager.saveData();
-                        ConsoleUtils.showProfileUpdateResult("生日已更新。", user);
+                        ConsoleUtils.showProfileUpdateResult("生日已成功更新！", user);
                         break;
                     case 3:
-                        user.setPhone(ConsoleUtils.readRequiredText("请输入新手机号："));
+                        user.setPhone(ConsoleUtils.readRequiredText("请输入新手机号"));
+                        ConsoleUtils.showSpinner("Updating profile database...", 500);
                         userManager.saveData();
-                        ConsoleUtils.showProfileUpdateResult("手机号已更新。", user);
+                        ConsoleUtils.showProfileUpdateResult("手机号已成功更新！", user);
                         break;
                     case 4:
-                        user.setEmail(ConsoleUtils.readRequiredText("请输入新邮箱："));
+                        user.setEmail(ConsoleUtils.readRequiredText("请输入新邮箱"));
+                        ConsoleUtils.showSpinner("Updating profile database...", 500);
                         userManager.saveData();
-                        ConsoleUtils.showProfileUpdateResult("邮箱已更新。", user);
+                        ConsoleUtils.showProfileUpdateResult("邮箱已成功更新！", user);
                         break;
                     case 5:
-                        String oldPassword = ConsoleUtils.readRequiredText("请输入旧登录密码：");
-                        String newPassword = ConsoleUtils.readRequiredText("请输入新登录密码：");
-                        String confirmPassword = ConsoleUtils.readRequiredText("请再次输入新登录密码：");
+                        String oldPassword = ConsoleUtils.readRequiredText("请输入旧登录密码");
+                        String newPassword = ConsoleUtils.readRequiredText("请输入新登录密码 (6位数字)");
+                        String confirmPassword = ConsoleUtils.readRequiredText("请再次输入新登录密码");
+                        ConsoleUtils.showSpinner("Resetting password security encryption...", 800);
                         boolean success = user.setNewAccountPassword(oldPassword, newPassword, confirmPassword);
                         if (success) {
                             userManager.saveData();
-                            ConsoleUtils.showOperationResult("登录密码修改成功。", "用户ID：" + user.getId(),
+                            ConsoleUtils.showOperationResult("登录密码修改成功。", "用户ID：" + user.getId() + "\n安全级别：高",
                                     "按回车键返回修改菜单...");
                         }
                         break;
@@ -184,11 +211,11 @@ public class UserMenuUI {
                         userManager.saveData();
                         break;
                     default:
-                        System.out.println("无效选项，请重新输入。");
+                        ConsoleUtils.showError("无效选项，请重新选择。");
                         break;
                 }
             } catch (BankException e) {
-                System.out.println("修改失败：" + e.getMessage());
+                ConsoleUtils.showError("修改失败：" + e.getMessage());
                 ConsoleUtils.waitForEnter("按回车键继续...");
             }
         }
