@@ -267,7 +267,7 @@ public class CardMenuUI {
         System.out.println("    Card Status:  " + (account.isLocked() ? ConsoleUtils.color("Locked", ConsoleUtils.RED) : "Active"));
         System.out.println("    Balance:      " + ConsoleUtils.formatMoney(account.getBalance()));
 
-        if (account instanceof SavingsAccount) {
+        if (isSavings) {
             SavingsAccount savingsAccount = (SavingsAccount) account;
             System.out.println("    Interest:     " + String.format("%.2f%% (Annual)", savingsAccount.getInterestRate() * 100));
         } else if (account instanceof CreditAccount) {
