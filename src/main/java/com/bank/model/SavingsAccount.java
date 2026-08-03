@@ -46,4 +46,13 @@ public class SavingsAccount extends BankAccount {
     public double getInterestRate() {
         return interestRate;
     }
+
+    @Override
+    public String toString() {
+        return "储蓄卡{卡号=" + getAccountNumber()
+                + ", 余额=" + String.format("%.2f", getBalance())
+                + ", 年利率=" + String.format("%.2f%%", interestRate * 100)
+                + ", 状态=" + (isLocked() ? "已锁定" : "正常")
+                + "}";
+    }
 }

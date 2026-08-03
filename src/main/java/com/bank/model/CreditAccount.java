@@ -86,4 +86,16 @@ public class CreditAccount extends BankAccount implements OnlinePayable, Currenc
     public double getUsedCredit() {
         return usedCredit;
     }
+
+    @Override
+    public String toString() {
+        double available = getBalance() + (creditLimit - usedCredit);
+        return "信用卡{卡号=" + getAccountNumber()
+                + ", 余额=" + String.format("%.2f", getBalance())
+                + ", 信用额度=" + String.format("%.2f", creditLimit)
+                + ", 已用=" + String.format("%.2f", usedCredit)
+                + ", 可用=" + String.format("%.2f", available)
+                + ", 状态=" + (isLocked() ? "已锁定" : "正常")
+                + "}";
+    }
 }
