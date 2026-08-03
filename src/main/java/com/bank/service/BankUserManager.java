@@ -13,10 +13,19 @@ import java.util.List;
 public class BankUserManager {
     private List<BankUser> users;
     private static final String DATA_FILE = "data/bank_data.dat";
+    private String loadErrorMessage;
 
     public BankUserManager() {
         this.users = new ArrayList<>();
         loadData();
+    }
+
+    /**
+     * 如果本地数据加载失败（兼容性问题或文件损坏），返回错误描述。
+     * GUI 可在启动时检查并提示用户。
+     */
+    public String getLoadErrorMessage() {
+        return loadErrorMessage;
     }
 
     @SuppressWarnings("unchecked")
@@ -49,7 +58,11 @@ public class BankUserManager {
 
             System.out.println("成功从本地加载数据，当前用户数：" + users.size());
         } catch (Exception e) {
-            System.out.println("本地数据格式更新或读取失败，初始化新数据表（" + e.getMessage() + "）");
+            // 记录到字段，GUI 启动时可读出此消息
+            this.loadErrorMessage = "本地数据格式更新或文件损坏（" + e.getClass().getSimpleName() + ": " + e.getMessage()
+                    + "），已初始化为空数据。\n"
+                    + "如你确定是版本升级导致，请联系开发者手动迁移 data/bank_data.dat。";
+            System.out.println(loadErrorMessage);
             this.users = new ArrayList<>();
         }
     }

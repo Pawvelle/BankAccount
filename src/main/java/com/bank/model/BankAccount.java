@@ -19,6 +19,8 @@ public abstract class BankAccount implements Serializable {
     protected double balance;
     private int failedAttempts = 0;
     private boolean isLocked = false;
+    // 旧版数据升级后提示用户尽快改密（非序列化）
+    private transient boolean legacyPasswordUpgraded = false;
 
     private static int accountCounter = 2026001;
     public static final int MAX_FAILED_ATTEMPTS = 3;
@@ -83,7 +85,18 @@ public abstract class BankAccount implements Serializable {
             this.salt = PasswordUtils.generateSalt();
             String legacy = (this.accountPassword != null) ? this.accountPassword : "000000";
             this.passwordHash = PasswordUtils.hashPassword(legacy, salt);
+            // 升级后立即清空明文密码
+            this.accountPassword = null;
+            this.legacyPasswordUpgraded = true;
         }
+    }
+
+    public boolean isLegacyPasswordUpgraded() {
+        return legacyPasswordUpgraded;
+    }
+
+    public void clearLegacyPasswordUpgradedFlag() {
+        this.legacyPasswordUpgraded = false;
     }
 
     // 获取账户持有人唯一标识
@@ -108,12 +121,26 @@ public abstract class BankAccount implements Serializable {
         verifyPassword(oldPassword);
         PasswordUtils.validatePasswordConfirmation(newPassword, confirmPassword);
 
+        applyNewPassword(newPassword);
+        return true;
+    }
+
+    /**
+     * 强制重置密码（不校验旧密码），用于账号/卡片被锁死后的找回流程。
+     * 典型场景：用户连续输错密码导致卡片/账号被锁，通过此入口凭身份信息重置。
+     */
+    public void forceResetPassword(String newPassword, String confirmPassword) {
+        PasswordUtils.validatePasswordConfirmation(newPassword, confirmPassword);
+        applyNewPassword(newPassword);
+    }
+
+    private void applyNewPassword(String newPassword) {
         this.salt = PasswordUtils.generateSalt();
         this.passwordHash = PasswordUtils.hashPassword(newPassword, salt);
         this.accountPassword = null;
         this.failedAttempts = 0;
         this.isLocked = false;
-        return true;
+        this.legacyPasswordUpgraded = false;
     }
 
     public boolean isLocked() {
@@ -142,5 +169,14 @@ public abstract class BankAccount implements Serializable {
     // 获取账户所属用户
     public BankUser getUser() {
         return user;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName()
+                + "{卡号=" + accountNumber
+                + ", 余额=" + String.format("%.2f", balance)
+                + ", 状态=" + (isLocked ? "已锁定" : "正常")
+                + "}";
     }
 }

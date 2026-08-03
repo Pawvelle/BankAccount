@@ -26,6 +26,8 @@ public class BankUser implements Serializable {
     private List<BankAccount> myAccounts;
     private int failedLoginAttempts = 0;
     private boolean isLocked = false;
+    // 旧版数据升级后，用于提示用户尽快修改密码（非序列化）
+    private transient boolean legacyPasswordUpgraded = false;
 
     private static int userCounter = 100001;
     public static final int MAX_FAILED_ATTEMPTS = 3;
@@ -36,11 +38,12 @@ public class BankUser implements Serializable {
         }
         this.birthday = validateBirthday(birthday);
         this.email = validateEmail(email);
+        validatePhone(phone);
         PasswordUtils.validatePasswordFormat(rawPassword);
 
         this.username = username.trim();
         this.id = "USER_" + userCounter++;
-        this.phone = phone;
+        this.phone = phone.trim();
         this.salt = PasswordUtils.generateSalt();
         this.passwordHash = PasswordUtils.hashPassword(rawPassword, salt);
         this.totalAssets = 0;
@@ -82,19 +85,46 @@ public class BankUser implements Serializable {
             this.salt = PasswordUtils.generateSalt();
             String legacy = (this.password != null) ? this.password : "000000";
             this.passwordHash = PasswordUtils.hashPassword(legacy, salt);
+            // 升级后立即清空明文密码，避免在内存中残留
+            this.password = null;
+            // 标记为升级态，登录后强制提示用户改密
+            this.legacyPasswordUpgraded = true;
         }
+    }
+
+    /**
+     * 是否在本次会话中从旧版数据升级而来。返回 true 时建议强制用户修改密码。
+     */
+    public boolean isLegacyPasswordUpgraded() {
+        return legacyPasswordUpgraded;
+    }
+
+    public void clearLegacyPasswordUpgradedFlag() {
+        this.legacyPasswordUpgraded = false;
     }
 
     public boolean setNewAccountPassword(String oldPassword, String newPassword, String confirmPassword) {
         verifyPassword(oldPassword);
         PasswordUtils.validatePasswordConfirmation(newPassword, confirmPassword);
+        applyNewPassword(newPassword);
+        return true;
+    }
 
+    /**
+     * 强制重置密码（不校验旧密码），用于账号被锁后的找回流程。
+     */
+    public void forceResetPassword(String newPassword, String confirmPassword) {
+        PasswordUtils.validatePasswordConfirmation(newPassword, confirmPassword);
+        applyNewPassword(newPassword);
+    }
+
+    private void applyNewPassword(String newPassword) {
         this.salt = PasswordUtils.generateSalt();
         this.passwordHash = PasswordUtils.hashPassword(newPassword, salt);
         this.password = null;
         this.failedLoginAttempts = 0;
         this.isLocked = false;
-        return true;
+        this.legacyPasswordUpgraded = false;
     }
 
     public void addAccount(BankAccount acc) {
@@ -111,7 +141,8 @@ public class BankUser implements Serializable {
         }
 
         myAccounts.add(acc);
-        totalAssets += acc.getBalance();
+        // 注意：totalAssets 字段保留仅用于兼容旧版序列化数据。
+        // 实际取数请使用 getTotalAssets() —— 它会实时计算。
     }
 
     public void displayMyAssets() {
@@ -139,7 +170,8 @@ public class BankUser implements Serializable {
     }
 
     public double getTotalAssets() {
-        return totalAssets;
+        // 始终返回实时计算值，避免字段 stale（历史版本曾因 addAccount 累加导致不一致）
+        return calculateTotalWealth();
     }
 
     public void setUsername(String username) {
@@ -182,11 +214,19 @@ public class BankUser implements Serializable {
         return birthday;
     }
 
-    public void setPhone(String phone) {
+    public static String validatePhone(String phone) {
         if (phone == null || phone.trim().isEmpty()) {
             throw new BankException("手机号不能为空！");
         }
-        this.phone = phone.trim();
+        String trimmed = phone.trim();
+        if (!trimmed.matches("^1[3-9]\\d{9}$")) {
+            throw new BankException("手机号格式错误！请输入有效的11位中国大陆手机号，例如：13800138000");
+        }
+        return trimmed;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = validatePhone(phone);
     }
 
     public void setEmail(String email) {
@@ -237,5 +277,13 @@ public class BankUser implements Serializable {
                 "电话号码：" + phone + "\n" +
                 "电子邮箱：" + email + "\n" +
                 "状态：" + (isLocked ? "已锁定 (密码错3次)" : "正常");
+    }
+
+    @Override
+    public String toString() {
+        return "BankUser{id=" + id + ", username=" + username
+                + ", 总资产=" + String.format("%.2f", getTotalAssets())
+                + ", 卡片数=" + myAccounts.size()
+                + ", 状态=" + (isLocked ? "已锁定" : "正常") + "}";
     }
 }

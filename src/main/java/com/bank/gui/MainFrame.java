@@ -42,6 +42,14 @@ public class MainFrame extends JFrame {
         });
 
         showLogin();
+
+        // 启动后检查本地数据是否加载失败
+        if (userManager.getLoadErrorMessage() != null) {
+            JOptionPane.showMessageDialog(this,
+                    userManager.getLoadErrorMessage(),
+                    "数据加载提示",
+                    JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     public BankUserManager getUserManager() {
