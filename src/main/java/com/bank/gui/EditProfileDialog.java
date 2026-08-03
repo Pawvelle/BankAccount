@@ -32,46 +32,54 @@ public class EditProfileDialog extends JDialog {
         phoneField.setText(user.getPhone());
         emailField.setText(user.getEmail());
 
-        JPanel root = new JPanel();
+        // 顶层 BorderLayout：表单可滚动，按钮始终可见
+        JPanel root = new JPanel(new BorderLayout());
         root.setBackground(UiUtils.BG);
-        root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
-        root.setBorder(BorderFactory.createEmptyBorder(32, 40, 28, 40));
+
+        JPanel form = new JPanel();
+        form.setBackground(UiUtils.BG);
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        form.setBorder(BorderFactory.createEmptyBorder(28, 40, 12, 40));
 
         JLabel title = new JLabel("个人资料");
         title.setFont(UiUtils.displayFont(28));
         title.setForeground(UiUtils.TEXT);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        root.add(title);
+        form.add(title);
 
         JLabel sub = new JLabel("更新你的账户信息");
         sub.setFont(UiUtils.bodyFont(14));
         sub.setForeground(UiUtils.TEXT_SECONDARY);
-        sub.setBorder(BorderFactory.createEmptyBorder(6, 0, 24, 0));
+        sub.setBorder(BorderFactory.createEmptyBorder(6, 0, 20, 0));
         sub.setAlignmentX(Component.LEFT_ALIGNMENT);
-        root.add(sub);
+        form.add(sub);
 
-        addRow(root, "用户名", usernameField);
-        addRow(root, "生日 (yyyy-MM-dd)", birthdayField);
-        addRow(root, "手机号", phoneField);
-        addRow(root, "邮箱", emailField);
+        addRow(form, "用户名", usernameField);
+        addRow(form, "生日 (yyyy-MM-dd)", birthdayField);
+        addRow(form, "手机号", phoneField);
+        addRow(form, "邮箱", emailField);
 
         JLabel sep = new JLabel("修改密码（选填）");
         sep.setFont(UiUtils.captionFont(12));
         sep.setForeground(UiUtils.TEXT_SECONDARY);
-        sep.setBorder(BorderFactory.createEmptyBorder(8, 0, 12, 0));
+        sep.setBorder(BorderFactory.createEmptyBorder(8, 0, 10, 0));
         sep.setAlignmentX(Component.LEFT_ALIGNMENT);
-        root.add(sep);
+        form.add(sep);
 
-        addRow(root, "旧密码", oldPwdField);
-        addRow(root, "新密码 (6位数字)", newPwdField);
-        addRow(root, "确认新密码", confirmPwdField);
+        addRow(form, "旧密码", oldPwdField);
+        addRow(form, "新密码 (6位数字)", newPwdField);
+        addRow(form, "确认新密码", confirmPwdField);
 
-        root.add(Box.createVerticalStrut(8));
+        JScrollPane scroll = new JScrollPane(form);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.getViewport().setBackground(UiUtils.BG);
+        root.add(scroll, BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttons.setOpaque(false);
-        buttons.setAlignmentX(Component.LEFT_ALIGNMENT);
-        buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        buttons.setBackground(UiUtils.BG);
+        buttons.setBorder(BorderFactory.createEmptyBorder(8, 40, 16, 40));
 
         UiUtils.RoundedButton cancel = UiUtils.quietButton("取消");
         cancel.setPreferredSize(new Dimension(88, 40));
@@ -81,11 +89,11 @@ public class EditProfileDialog extends JDialog {
         save.addActionListener(e -> doSave());
         buttons.add(cancel);
         buttons.add(save);
-        root.add(buttons);
+        root.add(buttons, BorderLayout.SOUTH);
 
         setContentPane(root);
         setSize(440, 680);
-        setMinimumSize(new Dimension(420, 640));
+        setMinimumSize(new Dimension(420, 580));
         setLocationRelativeTo(owner);
     }
 
@@ -107,7 +115,14 @@ public class EditProfileDialog extends JDialog {
             String oldPwd = new String(oldPwdField.getPassword());
             String newPwd = new String(newPwdField.getPassword());
             String confirmPwd = new String(confirmPwdField.getPassword());
-            if (!oldPwd.isEmpty() || !newPwd.isEmpty() || !confirmPwd.isEmpty()) {
+            boolean anyPwdFilled = !oldPwd.isEmpty() || !newPwd.isEmpty() || !confirmPwd.isEmpty();
+            if (anyPwdFilled) {
+                if (oldPwd.isEmpty() || newPwd.isEmpty() || confirmPwd.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "如要修改密码，旧密码、新密码和确认密码三个都必须填写。",
+                            "输入错误", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 user.setNewAccountPassword(oldPwd, newPwd, confirmPwd);
             }
 

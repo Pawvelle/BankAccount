@@ -30,28 +30,32 @@ public class ApplyCardDialog extends JDialog {
         this.userManager = userManager;
         this.user = user;
 
-        JPanel root = new JPanel();
+        // 顶层 BorderLayout：表单可滚动，按钮始终可见
+        JPanel root = new JPanel(new BorderLayout());
         root.setBackground(UiUtils.BG);
-        root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
-        root.setBorder(BorderFactory.createEmptyBorder(32, 40, 28, 40));
+
+        JPanel form = new JPanel();
+        form.setBackground(UiUtils.BG);
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        form.setBorder(BorderFactory.createEmptyBorder(28, 40, 12, 40));
 
         JLabel title = new JLabel("申请新卡");
         title.setFont(UiUtils.displayFont(28));
         title.setForeground(UiUtils.TEXT);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        root.add(title);
+        form.add(title);
 
         JLabel sub = new JLabel("选择卡片类型并完成设置");
         sub.setFont(UiUtils.bodyFont(14));
         sub.setForeground(UiUtils.TEXT_SECONDARY);
-        sub.setBorder(BorderFactory.createEmptyBorder(6, 0, 24, 0));
+        sub.setBorder(BorderFactory.createEmptyBorder(6, 0, 20, 0));
         sub.setAlignmentX(Component.LEFT_ALIGNMENT);
-        root.add(sub);
+        form.add(sub);
 
-        addRow(root, "卡片类型", typeCombo);
-        addRow(root, "银行卡密码 (6位数字)", pwdField);
-        addRow(root, "确认密码", confirmField);
-        addRow(root, "初始存入余额", balanceField);
+        addRow(form, "卡片类型", typeCombo);
+        addRow(form, "银行卡密码 (6位数字)", pwdField);
+        addRow(form, "确认密码", confirmField);
+        addRow(form, "初始存入余额", balanceField);
 
         JPanel extraRow = new JPanel();
         extraRow.setOpaque(false);
@@ -67,8 +71,8 @@ public class ApplyCardDialog extends JDialog {
         extraRow.add(extraField);
         extraRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         extraRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 76));
-        root.add(extraRow);
-        root.add(Box.createVerticalStrut(14));
+        form.add(extraRow);
+        form.add(Box.createVerticalStrut(14));
 
         typeCombo.addActionListener(e -> {
             boolean savings = typeCombo.getSelectedIndex() == 0;
@@ -76,12 +80,16 @@ public class ApplyCardDialog extends JDialog {
             extraField.setText("");
         });
 
-        root.add(Box.createVerticalStrut(8));
+        JScrollPane scroll = new JScrollPane(form);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.getViewport().setBackground(UiUtils.BG);
+        root.add(scroll, BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttons.setOpaque(false);
-        buttons.setAlignmentX(Component.LEFT_ALIGNMENT);
-        buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        buttons.setBackground(UiUtils.BG);
+        buttons.setBorder(BorderFactory.createEmptyBorder(8, 40, 16, 40));
 
         UiUtils.RoundedButton cancel = UiUtils.quietButton("取消");
         cancel.setPreferredSize(new Dimension(88, 40));
@@ -91,11 +99,11 @@ public class ApplyCardDialog extends JDialog {
         ok.addActionListener(e -> doApply());
         buttons.add(cancel);
         buttons.add(ok);
-        root.add(buttons);
+        root.add(buttons, BorderLayout.SOUTH);
 
         setContentPane(root);
         setSize(440, 560);
-        setMinimumSize(new Dimension(420, 520));
+        setMinimumSize(new Dimension(420, 480));
         setLocationRelativeTo(owner);
     }
 
