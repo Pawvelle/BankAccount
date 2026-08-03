@@ -1,115 +1,171 @@
 # 银行账户管理系统 (Bank Account Management System)
 
-> **项目类型**：面向对象编程 (OOP) 综合实践项目 / 课程设计作业  
-> **开发语言**：Java (JDK 8+)  
-> **运行环境**：Graphical User Interface (GUI) —— 基于纯 JDK Swing 实现，无需第三方依赖
+> 面向对象编程（OOP）综合实践项目  
+> Java (JDK 8+) · 纯 JDK Swing GUI · 零第三方依赖
 
 ---
 
-## 1. 项目简介 (Project Overview)
+## 📖 项目简介
 
-本项目是一个基于纯 Java 编写的**图形界面 (GUI) 银行账户管理系统**。项目旨在通过模拟真实世界的银行业务逻辑，深度实践并展示 Java 面向对象编程的核心理念（如**封装**、**继承**、**多态**、**抽象**），以及**接口编程**和**Java IO 流数据持久化**技术。
+一个使用 **纯 Java Swing** 编写的图形界面银行账户管理系统。围绕真实银行场景建模，深度实践 OOP 核心思想（封装、继承、多态、抽象）、接口编程、异常体系设计以及 Java IO 数据持久化。
 
-系统采用现代扁平化设计风格的 Swing 界面，支持多用户注册与管理、多账户体系（储蓄卡与信用卡并存）、基础金融交易（存取款、在线支付、信用还款），并配备了完善的输入校验与异常处理机制，保证了系统的高内聚、低耦合与健壮性。
+界面采用**现代扁平化设计风格**（灵感来自 Apple 官网），多用户注册 / 多账户管理 / 基础金融交易一应俱全，并配备了完善的输入校验、密码哈希存储、防刷锁定、数据自动落盘等工程化机制。
 
 ---
 
-## 2. 系统架构与设计 (System Architecture)
+## ✨ 核心特性
 
-经过工程化重构，本项目严格遵循标准的 Java 包管理规范，采用经典的 **MVC 变体**分层架构。
+### 🔐 安全的用户鉴权
+- 注册 / 登录 / **忘记密码**（被锁后强制重置）
+- SHA-256 + Salt 哈希存储密码，**明文不落内存**
+- 连续输错 3 次自动锁定，支持解锁
+- 严格输入校验：6 位数字密码、邮箱正则、11 位中国大陆手机号正则
 
-### 2.1 目录结构
+### 💳 双账户体系
+- **储蓄卡**：存取款、计息、底金保护（最低保留 10 元）
+- **信用卡**：信用额度、透支取款、在线支付、还款、USD 汇率折算
 
-```text
+### 💾 数据持久化
+- Java 原生序列化（`ObjectInputStream` / `ObjectOutputStream`）
+- 数据文件 `data/bank_data.dat`
+- 每次核心状态变更 + 退出时自动落盘
+- 启动时校验数据完整性，加载失败有明确提示
+
+### 📊 数据统计与排行
+- 单用户多卡总资产实时计算
+- 全站用户财富排行榜
+
+### 🎨 现代化 UI
+- Apple 风格配色（蓝主色 + 浅灰背景 + 圆角组件）
+- 中英文字体自适应（自动选用 PingFang SC）
+- 键盘焦点态视觉反馈
+- 表单过长可滚动，操作按钮始终可见
+
+---
+
+## 🏗️ 架构设计
+
+### 分层结构
+
+```
 src/main/java/com/bank/
-├── exception/    # 业务自定义异常层 (Custom Exceptions)
-│   ├── BankException.java                 (基础异常)
-│   ├── InvalidPasswordException.java      (密码校验/错误重试异常)
-│   ├── AccountLockedException.java        (账号/卡片锁定异常)
-│   ├── InsufficientBalanceException.java   (余额不足异常)
-│   ├── CreditLimitExceededException.java  (透支超额异常)
-│   └── AccountNotFoundException.java       (账户未找到异常)
-├── interfaces/   # 抽象接口层 (Interfaces)
-│   ├── CurrencyConvertible.java           (多币种转换接口)
-│   └── OnlinePayable.java                 (在线支付接口)
-├── model/        # 数据模型层 (Data Models)
-│   ├── BankAccount.java                   (银行账户抽象基类 - 含哈希密码与防刷锁定)
-│   ├── BankUser.java                      (系统用户实体类 - 含哈希密码与防刷锁定)
-│   ├── CreditAccount.java                 (信用卡账户，继承 BankAccount)
-│   └── SavingsAccount.java                (储蓄卡账户，继承 BankAccount)
-├── service/      # 业务逻辑层 (Business Services)
-│   └── BankUserManager.java               (用户与数据管理器)
-├── ui/           # 用户交互层 (User Interface)
-│   ├── Main.java                          (系统总入口 - 启动 GUI)
-├── gui/          # 图形界面层 (Swing GUI)
-│   ├── MainFrame.java                     (主窗口 / 页面导航)
-│   ├── LoginPanel.java                    (登录面板)
-│   ├── RegisterDialog.java                (注册对话框)
-│   ├── RankingDialog.java                 (资产排行对话框)
-│   ├── UserCenterPanel.java               (用户中心面板)
-│   ├── WalletPanel.java                   (卡包管理面板)
-│   ├── ApplyCardDialog.java               (申请银行卡对话框)
-│   ├── CardOperationDialog.java           (银行卡操作对话框)
-│   ├── CreditFeaturesDialog.java          (信用卡管理对话框)
-│   ├── EditProfileDialog.java             (修改资料对话框)
-│   └── UiUtils.java                       (配色 / 圆角组件工具)
-└── util/         # 核心工具层 (Utilities)
-    └── PasswordUtils.java                 (SHA-256 + Salt 盐值摘要校验工具)
+├── exception/   业务自定义异常层
+├── interfaces/  抽象接口层
+├── model/       数据模型层
+├── service/     业务逻辑层
+├── ui/          (遗留 CLI，已不启用)
+├── gui/         Swing 图形界面层
+└── util/        工具层
 ```
 
-### 2.2 核心设计思想 (Design Principles)
-- **封装性 (Encapsulation)**：所有的实体类属性均声明为 `private`，通过严格校验的 `getter/setter` 或业务方法（如 `withdraw`，`deposit`）对外提供访问，确保资金和密码等敏感数据的安全性。
-- **继承与多态 (Inheritance & Polymorphism)**：`BankAccount` 作为抽象基类（Abstract Class），将 `withdraw` 定义为抽象方法，由其子类 `SavingsAccount` 和 `CreditAccount` 根据各自的业务规则（如余额检查、透支逻辑）进行重写，从而实现多态调用。
-- **接口分离原则 (Interface Segregation)**：通过抽取 `OnlinePayable` 和 `CurrencyConvertible` 接口，赋予信用卡特定的扩展能力，使得代码结构更具扩展性。
+### 核心设计思想
+
+| 原则 | 落地方式 |
+|------|---------|
+| **封装** | 所有实体属性 `private`，通过带校验的 getter / setter 或业务方法（`deposit` / `withdraw`）暴露 |
+| **继承 + 多态** | `BankAccount` 抽象基类，将 `withdraw` 声明为抽象方法；`SavingsAccount` / `CreditAccount` 按各自规则重写 |
+| **接口分离** | `OnlinePayable`（在线支付）、`CurrencyConvertible`（多币种转换）只赋予信用卡 |
+| **异常体系** | `BankException` 根异常 → 派生出密码、锁定、余额、额度、未找到等具体异常 |
+
+### 关键类
+
+| 类 | 职责 |
+|----|------|
+| `BankAccount` | 抽象基类，封装密码哈希、防刷锁定、状态管理 |
+| `SavingsAccount` | 储蓄卡，约束最低余额 10 元 |
+| `CreditAccount` | 信用卡，支持透支、还款、在线支付、汇率折算 |
+| `BankUser` | 用户实体，含多卡管理、密码管理、个人资料 |
+| `BankUserManager` | 全局用户/数据持久化管理器 |
+| `PasswordUtils` | SHA-256 + Salt 工具方法 |
 
 ---
 
-## 3. 核心功能特性 (Key Features)
+## 🚀 快速开始
 
-1. **安全的用户鉴权体系**
-   - 支持用户的注册、登录。
-   - 包含严格的输入校验（如 6 位纯数字密码校验、正则验证邮箱/手机号格式）。
-   - 用户唯一标识（USER_ID）全局自增防重。
+本项目**零依赖**，仅需 JDK 8+。
 
-2. **多元化的账户管理**
-   - **储蓄卡 (Savings Account)**：支持存款、取款，提供基于固定利率的计息（Apply Interest）功能，并限制取款后的最低余额。
-   - **信用卡 (Credit Account)**：引入信用额度（Credit Limit）概念，支持信用透支取款、还款功能，同时接入在线支付通道和美元汇率转换计算。
+### 编译
 
-3. **稳定可靠的数据持久化 (Data Persistence)**
-   - 抛弃了传统内存运行时存储的易失性，系统接入了本地持久化机制。
-   - 依赖 Java 原生序列化流 (`ObjectOutputStream` / `ObjectInputStream`)。
-   - 数据文件统一存放在 `data/bank_data.dat` 中。系统自动在每次核心状态变更（如交易发生、修改资料）以及退出时进行落盘，确保用户资产数据 0 丢失。
-
-4. **数据统计与排行**
-   - 系统支持纵向计算单个用户名下所有绑定的实体卡片余额，并根据总资产进行全站用户的财富排行榜打印。
-
-5. **简约高级冷静的 CLI 交互界面 (Minimalist Developer CLI)**
-   - 深度借鉴 Claude Code 设计美学，去除冗余的 Emoji 和粗重框线，改用暗灰色细分线与优雅的 2 空格缩进排版，呈现纯粹的终端开发质感。
-   - 统一交互输入前缀（如 `? [输入项] ❯ `），并在身份鉴权、卡片激活、资金结算等场景接入轻量级控制台 Spinner 旋转加载动画。
-
----
-
-## 4. 运行指南 (Run Instructions)
-
-本项目无任何第三方依赖（如 Maven 或 Gradle 等外置框架），仅需基础的 Java 编译环境即可运行。
-
-### 4.1 编译项目 (Compile)
-在项目根目录（即 `BankAccount` 文件夹下）打开终端，执行以下命令将源码编译到 `bin` 目录：
 ```bash
 javac -d bin -sourcepath src/main/java src/main/java/com/bank/ui/Main.java
 ```
 
-### 4.2 运行系统 (Run)
-编译完成后，执行以下命令启动交互式命令行终端：
+### 运行
+
 ```bash
 java -cp bin com.bank.ui.Main
 ```
 
-### 4.3 故障排除
-如果在 IDE（如 VSCode）中遇到包名报错提示，请确保 IDE 的源文件目录 (Source Path) 已正确指向 `src/main/java` 而非 `src`。
+或直接使用项目根目录下的 `run.sh` / `run.bat`。
+
+### 故障排除
+
+- **IDE 包名报错**：确保 IDE 的 Source Path 指向 `src/main/java` 而非 `src`
+- **中文显示异常**：系统已自动适配 PingFang SC / Hiragino Sans GB / 微软雅黑等中文字体
+- **数据加载失败**：查看启动时弹窗，按提示操作；如确认是版本升级，可手动备份并清空 `data/bank_data.dat`
 
 ---
 
-## 5. 项目总结 (Conclusion)
+## 🖼️ 界面预览
 
-通过本项目的开发，深刻体会到了 OOP 面向对象思想在解耦复杂业务场景时的巨大威力。抽象类的使用完美地复用了公共代码，接口的引入则保证了程序极高的扩展能力；同时，文件 IO 流的实战应用，为系统注入了真正的实用价值。后续可考虑引入真正的关系型数据库（如 MySQL）进行数据托管以支持并发处理。
+### 登录开屏页
+- 居中品牌区 + 浮卡登录表单
+- Apple 风格圆角、浅底输入框、蓝色主按钮
+- 快捷入口：创建账户 / 资产排行 / 忘记密码
+
+### 主要功能页面（部分示意）
+- **用户中心**：问候 + 总资产 / 银行卡数 / 状态三大统计卡 + 三个主操作按钮 + 基本资料卡
+- **卡包管理**：表格展示名下所有银行卡（卡号、类型、余额、状态），支持双击进入详情
+- **卡片操作**：存款 / 取款 / 修改密码 / 结息（储蓄卡）/ 信用卡管理（线上支付、还款、美元折算）
+- **个人资料**：编辑用户信息 + 改密 + 触发旧版数据升级提示
+- **资产排行**：全站用户按总资产降序
+
+---
+
+## 🛠️ 最近改进（Changelog）
+
+### v2.x（最近）
+- ✅ **修复**：账号/卡片被锁后**无法解锁**问题，新增 `forceResetPassword` 强制重置入口（登录页「忘记密码」+ 卡操作页「重置卡密码」）
+- ✅ **修复**：`EditProfileDialog` 改密时 `||` 误判改为完整三选一校验
+- ✅ **修复**：`BankUser.totalAssets` 字段 stale，改为实时计算
+- ✅ **修复**：序列化升级后明文密码残留内存，升级后立即清空
+- ✅ **修复**：`RegisterDialog` / `EditProfileDialog` / `ApplyCardDialog` 高度不足被截断，改为 `BorderLayout` + 可滚动表单
+- ✅ **修复**：macOS 下 SF Pro 字体不含中文导致按钮「...」豆腐块，优先 PingFang SC
+- ✅ **修复**：`RoundedButton` margin 过大挤掉小按钮文字
+- ✅ **增强**：手机号正则校验（11 位 1[3-9] 开头）
+- ✅ **增强**：信用卡还款、汇率文案与代码常量统一
+- ✅ **增强**：旧版数据迁移自动提示用户改密
+- ✅ **增强**：`loadData` 失败时 GUI 弹窗提示，不再静默重置
+- ✅ **完善**：所有 model 类增加 `toString()`，CLI / 调试更友好
+
+### v1.x（初版）
+- 基础 OOP 架构与 Swing GUI
+- 注册 / 登录 / 多账户管理
+- 储蓄卡 / 信用卡核心功能
+- 数据持久化（Java 序列化）
+- CLI 模式（已弃用，代码保留供参考）
+
+---
+
+## ⚠️ 已知限制
+
+- **密码强度**：仅校验 6 位数字，生产场景应使用 BCrypt / Argon2 + 更复杂的密码策略
+- **并发**：UI 单线程模型，未做并发控制；多窗口同时操作同一账户可能产生数据竞争
+- **会话**：无登录态保持，关闭即退出
+- **CLI 模式**：`src/main/java/com/bank/ui/` 下 `CardMenuUI` / `UserMenuUI` / `ConsoleUtils` 已不启用（GUI 启动），代码保留作为命令行 OOP 实践参考
+
+---
+
+## 🔮 后续可拓展
+
+- 真正的关系型数据库（MySQL / SQLite）替代文件持久化
+- 转账、流水、统计图表
+- 导出 CSV / Excel
+- 国际化 i18n
+- 单元测试 / 集成测试（JUnit 5）
+
+---
+
+## 📄 License
+
+本项目为个人学习 / 课程设计用途，代码可自由参考。
