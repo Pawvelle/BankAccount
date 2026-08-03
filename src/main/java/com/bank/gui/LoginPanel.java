@@ -112,8 +112,11 @@ public class LoginPanel extends UiUtils.AtmospherePanel {
         registerBtn.addActionListener(e -> doRegister());
         UiUtils.RoundedButton rankBtn = UiUtils.quietButton("资产排行");
         rankBtn.addActionListener(e -> new RankingDialog(frame, userManager).setVisible(true));
+        UiUtils.RoundedButton forgotBtn = UiUtils.ghostButton("忘记密码？");
+        forgotBtn.addActionListener(e -> doForgotPassword());
         links.add(registerBtn);
         links.add(rankBtn);
+        links.add(forgotBtn);
         g.gridy = 5;
         g.insets = new Insets(0, 0, 0, 0);
         form.add(links, g);
@@ -150,6 +153,13 @@ public class LoginPanel extends UiUtils.AtmospherePanel {
         try {
             BankUser user = userManager.authenticate(id, password);
             passwordField.setText("");
+            // 旧版数据升级提示：本次会话中曾因升级而重置密码，建议立即改密
+            if (user.isLegacyPasswordUpgraded()) {
+                JOptionPane.showMessageDialog(this,
+                        "检测到你的账号数据来自旧版本，已为你自动迁移。\n" +
+                                "为了账号安全，请尽快通过「个人资料 → 修改密码」设置一个新的登录密码。",
+                        "安全提示", JOptionPane.WARNING_MESSAGE);
+            }
             frame.showUserCenter(user);
         } catch (BankException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "登录失败", JOptionPane.ERROR_MESSAGE);
@@ -163,6 +173,53 @@ public class LoginPanel extends UiUtils.AtmospherePanel {
         if (created != null) {
             idField.setText(created.getId());
             passwordField.setText("");
+        }
+    }
+
+    /**
+     * 忘记密码 / 账号被锁强制重置流程：输入用户ID + 新密码 + 确认密码，
+     * 不校验旧密码（因为很可能正是因为忘了旧密码才被锁）。
+     */
+    private void doForgotPassword() {
+        JTextField idInput = new JTextField();
+        JPasswordField newPwd = new JPasswordField();
+        JPasswordField confirmPwd = new JPasswordField();
+        UiUtils.styleField(idInput);
+        UiUtils.styleField(newPwd);
+        UiUtils.styleField(confirmPwd);
+        Object[] form = new Object[]{
+                "请输入你的用户 ID：", idInput,
+                "新密码 (6位数字)：", newPwd,
+                "再次输入新密码：", confirmPwd
+        };
+        int r = JOptionPane.showConfirmDialog(this, form, "重置密码",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (r != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        String id = idInput.getText().trim();
+        String np = new String(newPwd.getPassword());
+        String cp = new String(confirmPwd.getPassword());
+        if (id.isEmpty() || np.isEmpty() || cp.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "所有字段都必须填写。", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            BankUser user = userManager.findUserById(id);
+            user.forceResetPassword(np, cp);
+            userManager.saveData();
+            JOptionPane.showMessageDialog(this,
+                    "密码已重置成功！\n用户ID：" + user.getId()
+                            + "\n请使用新密码登录。",
+                    "重置成功", JOptionPane.INFORMATION_MESSAGE);
+            idField.setText(user.getId());
+            passwordField.setText("");
+        } catch (com.bank.exception.AccountNotFoundException e) {
+            JOptionPane.showMessageDialog(this, "未找到该用户ID，请确认。", "重置失败", JOptionPane.ERROR_MESSAGE);
+        } catch (BankException e) {
+            JOptionPane.showMessageDialog(this, "重置失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
