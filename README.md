@@ -2,15 +2,15 @@
 
 > **项目类型**：面向对象编程 (OOP) 综合实践项目 / 课程设计作业  
 > **开发语言**：Java (JDK 8+)  
-> **运行环境**：Command Line Interface (CLI)
+> **运行环境**：Graphical User Interface (GUI) —— 基于纯 JDK Swing 实现，无需第三方依赖
 
 ---
 
 ## 1. 项目简介 (Project Overview)
 
-本项目是一个基于纯 Java 编写的控制台交互式银行账户管理系统。项目旨在通过模拟真实世界的银行业务逻辑，深度实践并展示 Java 面向对象编程的核心理念（如**封装**、**继承**、**多态**、**抽象**），以及**接口编程**和**Java IO 流数据持久化**技术。
+本项目是一个基于纯 Java 编写的**图形界面 (GUI) 银行账户管理系统**。项目旨在通过模拟真实世界的银行业务逻辑，深度实践并展示 Java 面向对象编程的核心理念（如**封装**、**继承**、**多态**、**抽象**），以及**接口编程**和**Java IO 流数据持久化**技术。
 
-系统支持多用户注册与管理、多账户体系（储蓄卡与信用卡并存）、基础金融交易（存取款、在线支付、信用还款），并配备了完善的输入校验与异常处理机制，保证了系统的高内聚、低耦合与健壮性。
+系统采用现代扁平化设计风格的 Swing 界面，支持多用户注册与管理、多账户体系（储蓄卡与信用卡并存）、基础金融交易（存取款、在线支付、信用还款），并配备了完善的输入校验与异常处理机制，保证了系统的高内聚、低耦合与健壮性。
 
 ---
 
@@ -40,10 +40,19 @@ src/main/java/com/bank/
 ├── service/      # 业务逻辑层 (Business Services)
 │   └── BankUserManager.java               (用户与数据管理器)
 ├── ui/           # 用户交互层 (User Interface)
-│   ├── CardMenuUI.java                    (卡包管理菜单)
-│   ├── ConsoleUtils.java                  (CLI 辅助输入输出)
-│   ├── Main.java                          (CLI 系统总入口)
-│   └── UserMenuUI.java                    (用户中心菜单)
+│   ├── Main.java                          (系统总入口 - 启动 GUI)
+├── gui/          # 图形界面层 (Swing GUI)
+│   ├── MainFrame.java                     (主窗口 / 页面导航)
+│   ├── LoginPanel.java                    (登录面板)
+│   ├── RegisterDialog.java                (注册对话框)
+│   ├── RankingDialog.java                 (资产排行对话框)
+│   ├── UserCenterPanel.java               (用户中心面板)
+│   ├── WalletPanel.java                   (卡包管理面板)
+│   ├── ApplyCardDialog.java               (申请银行卡对话框)
+│   ├── CardOperationDialog.java           (银行卡操作对话框)
+│   ├── CreditFeaturesDialog.java          (信用卡管理对话框)
+│   ├── EditProfileDialog.java             (修改资料对话框)
+│   └── UiUtils.java                       (配色 / 圆角组件工具)
 └── util/         # 核心工具层 (Utilities)
     └── PasswordUtils.java                 (SHA-256 + Salt 盐值摘要校验工具)
 ```

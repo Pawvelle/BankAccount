@@ -210,6 +210,18 @@ public class BankUser implements Serializable {
         return username;
     }
 
+    public String getBirthday() {
+        return birthday;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
     public List<BankAccount> getMyAccounts() {
         return myAccounts;
     }
