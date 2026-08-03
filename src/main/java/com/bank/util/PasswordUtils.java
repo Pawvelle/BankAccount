@@ -20,8 +20,11 @@ public class PasswordUtils {
     }
 
     public static String hashPassword(String rawPassword, String salt) {
-        if (rawPassword == null || salt == null) {
-            return "";
+        if (rawPassword == null) {
+            throw new IllegalArgumentException("原始密码不能为空！");
+        }
+        if (salt == null) {
+            throw new IllegalArgumentException("盐值不能为空！");
         }
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
