@@ -315,7 +315,9 @@ public class CardMenuUI {
                 case 3:
                     ConsoleUtils.showSpinner("Requesting FX rate gateway...", 600);
                     ConsoleUtils.showOperationResult("Exchange rate updated.",
-                            "USD Balance: " + String.format("%,.2f USD", account.convertToUSD()) + " (Exchange Rate: 7.24)",
+                            "USD Balance: " + String.format("%,.2f USD", account.convertToUSD())
+                                    + " (Exchange Rate: 1 USD ≈ "
+                                    + String.format("%.2f", com.bank.interfaces.CurrencyConvertible.USD_TO_CNY) + " CNY)",
                             "按回车键返回信用卡菜单...");
                     break;
                 case 4:

@@ -181,7 +181,8 @@ public class CreditFeaturesDialog extends JDialog {
 
     private void convertUsd() {
         JOptionPane.showMessageDialog(this,
-                "美元余额：" + String.format("%,.2f USD", account.convertToUSD()) + "\n汇率：7.24",
+                "美元余额：" + String.format("%,.2f USD", account.convertToUSD())
+                        + "\n汇率：1 USD ≈ " + String.format("%.2f", com.bank.interfaces.CurrencyConvertible.USD_TO_CNY) + " CNY",
                 "汇率折算", JOptionPane.INFORMATION_MESSAGE);
     }
 }
