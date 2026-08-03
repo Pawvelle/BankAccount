@@ -17,6 +17,7 @@ public class CardOperationDialog extends JDialog {
     private final BankUserManager userManager;
     private final BankAccount account;
     private final JLabel balanceValueLabel = new JLabel();
+    private final JLabel statusValueLabel = new JLabel();
 
     public CardOperationDialog(JFrame owner, BankUserManager userManager, BankUser user, BankAccount account) {
         super(owner, "卡片操作", true);
@@ -50,7 +51,8 @@ public class CardOperationDialog extends JDialog {
         balanceValueLabel.setText(UiUtils.formatMoney(account.getBalance()));
         info.add(balanceRow());
         info.add(divider());
-        info.add(UiUtils.infoRow("状态", account.isLocked() ? "已锁定" : "正常"));
+        statusValueLabel.setText(account.isLocked() ? "已锁定" : "正常");
+        info.add(statusRow());
         if (account instanceof SavingsAccount) {
             info.add(divider());
             info.add(UiUtils.infoRow("年利率",
@@ -79,6 +81,9 @@ public class CardOperationDialog extends JDialog {
         } else if (account instanceof CreditAccount) {
             addAction(buttons, "信用卡管理", true, this::openCreditFeatures);
         }
+        // 「重置卡密码」始终显示：卡片锁定时是解锁入口，未锁定时也是紧急重置入口
+        addAction(buttons, account.isLocked() ? "重置卡密码（已锁定）" : "重置卡密码",
+                true, this::resetLockedCardPassword);
         root.add(buttons);
         root.add(Box.createVerticalStrut(20));
 
@@ -107,6 +112,21 @@ public class CardOperationDialog extends JDialog {
         balanceValueLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         row.add(k, BorderLayout.WEST);
         row.add(balanceValueLabel, BorderLayout.EAST);
+        return row;
+    }
+
+    private JPanel statusRow() {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
+        JLabel k = new JLabel("状态");
+        k.setFont(UiUtils.bodyFont(14));
+        k.setForeground(UiUtils.TEXT_SECONDARY);
+        statusValueLabel.setFont(UiUtils.bodyFont(14));
+        statusValueLabel.setForeground(UiUtils.TEXT);
+        statusValueLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        row.add(k, BorderLayout.WEST);
+        row.add(statusValueLabel, BorderLayout.EAST);
         return row;
     }
 
@@ -151,6 +171,7 @@ public class CardOperationDialog extends JDialog {
 
     private void refreshBalance() {
         balanceValueLabel.setText(UiUtils.formatMoney(account.getBalance()));
+        statusValueLabel.setText(account.isLocked() ? "已锁定" : "正常");
     }
 
     private void doDeposit() {
@@ -166,6 +187,7 @@ public class CardOperationDialog extends JDialog {
             account.deposit(pwd, amount);
             userManager.saveData();
             refreshBalance();
+            notifyLegacyIfNeeded();
             JOptionPane.showMessageDialog(this,
                     "存款成功！\n存款金额：" + UiUtils.formatMoney(amount)
                             + "\n当前余额：" + UiUtils.formatMoney(account.getBalance()),
@@ -188,12 +210,26 @@ public class CardOperationDialog extends JDialog {
             account.withdraw(pwd, amount);
             userManager.saveData();
             refreshBalance();
+            notifyLegacyIfNeeded();
             JOptionPane.showMessageDialog(this,
                     "取款成功！\n取款金额：" + UiUtils.formatMoney(amount)
                             + "\n当前余额：" + UiUtils.formatMoney(account.getBalance()),
                     "操作成功", JOptionPane.INFORMATION_MESSAGE);
         } catch (BankException e) {
             JOptionPane.showMessageDialog(this, "操作失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * 旧版数据迁移提示：本次会话中如果刚把卡片密码从明文升级为 hash 存储，
+     * 弹窗提醒用户尽快修改成新密码。
+     */
+    private void notifyLegacyIfNeeded() {
+        if (account.isLegacyPasswordUpgraded()) {
+            JOptionPane.showMessageDialog(this,
+                    "检测到这张卡的数据来自旧版本。\n" +
+                            "为保障资金安全，请尽快通过「修改密码」或「重置卡密码」设置一个新的6位数字密码。",
+                    "安全提示", JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -213,6 +249,7 @@ public class CardOperationDialog extends JDialog {
         try {
             if (account.setNewAccountPassword(oldPwd, newPwd, confirm)) {
                 userManager.saveData();
+                refreshBalance();
                 JOptionPane.showMessageDialog(this, "银行卡密码修改成功。", "操作成功", JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (BankException e) {
@@ -263,5 +300,32 @@ public class CardOperationDialog extends JDialog {
         CreditFeaturesDialog dialog = new CreditFeaturesDialog(this, userManager, (CreditAccount) account);
         dialog.setVisible(true);
         refreshBalance();
+    }
+
+    /**
+     * 卡片锁定后强制重置密码：输入新密码 + 确认即可解锁。
+     */
+    private void resetLockedCardPassword() {
+        JPasswordField newPwd = new JPasswordField();
+        JPasswordField confirmPwd = new JPasswordField();
+        UiUtils.styleField(newPwd);
+        UiUtils.styleField(confirmPwd);
+        int r = JOptionPane.showConfirmDialog(this,
+                new Object[]{"请输入新密码 (6位数字)：", newPwd, "再次输入新密码：", confirmPwd},
+                "重置卡密码",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (r != JOptionPane.OK_OPTION) {
+            return;
+        }
+        try {
+            account.forceResetPassword(new String(newPwd.getPassword()), new String(confirmPwd.getPassword()));
+            userManager.saveData();
+            refreshBalance();
+            JOptionPane.showMessageDialog(this,
+                    "卡片密码已重置，锁定状态已解除。\n卡号：" + account.getAccountNumber(),
+                    "重置成功", JOptionPane.INFORMATION_MESSAGE);
+        } catch (BankException e) {
+            JOptionPane.showMessageDialog(this, "重置失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
