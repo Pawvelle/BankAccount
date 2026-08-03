@@ -51,12 +51,15 @@ public final class UiUtils {
     public static final Color NAV_BG         = new Color(0xFAFAFC);
 
     private static final String FONT_NAME = detectFont();
+    private static final String FALLBACK_NAME = detectChineseFallback();
 
     private UiUtils() {}
 
     private static String detectFont() {
+        // macOS 优先 PingFang SC：SF Pro / Helvetica 不含中文字形，会渲染成「...」豆腐块
         String[] preferred = {
-                "SF Pro Display", "SF Pro Text", "PingFang SC",
+                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "SimHei",
+                "SF Pro Display", "SF Pro Text",
                 "Helvetica Neue", "Helvetica", "Arial"
         };
         try {
@@ -69,6 +72,26 @@ public final class UiUtils {
                 }
             }
         } catch (Exception ignored) { /* 环境异常时使用默认字体 */ }
+        return "SansSerif";
+    }
+
+    /**
+     * 选择一个能稳定渲染中文的字体，作为主字体回退。
+     */
+    private static String detectChineseFallback() {
+        String[] preferred = {
+                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "SimHei", "Arial Unicode MS"
+        };
+        try {
+            String[] available = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+            for (String want : preferred) {
+                for (String name : available) {
+                    if (want.equalsIgnoreCase(name)) {
+                        return name;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
         return "SansSerif";
     }
 
@@ -341,7 +364,9 @@ public final class UiUtils {
             setContentAreaFilled(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setMargin(new Insets(8, 20, 8, 20));
+            // 之前 (8,20,8,20) 对小尺寸按钮（如 72px 宽的「退出」）会把文字挤出可见区，
+            // 被 Swing 截断成「...」。改小水平 margin。
+            setMargin(new Insets(6, 14, 6, 14));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
